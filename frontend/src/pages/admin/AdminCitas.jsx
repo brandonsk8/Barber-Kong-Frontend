@@ -16,30 +16,38 @@ export default function AdminCitas() {
   const [citas, setCitas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState(null);
+
+  async function load() {
+    setLoading(true);
+    setError('');
+    try {
+      const hoy = toISODate(new Date());
+      const res = await citasApi.listarPorRango({ desde: hoy, hasta: hoy });
+      setCitas(res || []);
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : 'No se pudieron cargar las citas de hoy.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      try {
-        const hoy = toISODate(new Date());
-        const res = await citasApi.listarPorRango({ desde: hoy, hasta: hoy });
-        if (!cancelled) setCitas(res || []);
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof ApiClientError ? err.message : 'No se pudieron cargar las citas de hoy.'
-          );
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
     load();
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  async function handleCancelar(id) {
+    if (!window.confirm('¿Cancelar esta cita?')) return;
+    setBusyId(id);
+    try {
+      await citasApi.cancelar(id);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : 'No se pudo cancelar la cita.');
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   const totalHoy = citas.length;
   const ingresosHoy = citas
@@ -87,6 +95,7 @@ export default function AdminCitas() {
                 <th>Servicio</th>
                 <th>Barbero</th>
                 <th>Estado</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -99,11 +108,22 @@ export default function AdminCitas() {
                   <td>
                     <span className={`status-pill ${ESTADO_PILL[c.estado] || 'wait'}`}>{c.estado}</span>
                   </td>
+                  <td className="row-actions">
+                    {['pendiente', 'confirmada'].includes(c.estado) && (
+                      <button
+                        type="button"
+                        disabled={busyId === c.id}
+                        onClick={() => handleCancelar(c.id)}
+                      >
+                        {busyId === c.id ? 'Cancelando…' : 'Cancelar'}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {citas.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="empty-state">
+                  <td colSpan={6} className="empty-state">
                     No hay citas registradas para hoy.
                   </td>
                 </tr>
