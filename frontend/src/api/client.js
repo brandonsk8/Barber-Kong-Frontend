@@ -69,10 +69,47 @@ async function request(path, { method = 'GET', body, auth = true, headers = {} }
   return payload;
 }
 
+// Para endpoints que devuelven un archivo (p. ej. /reportes, PDF/Excel) en vez de JSON
+// — request() de arriba siempre intenta parsear el body como texto/JSON, lo que
+// corrompe un binario. Devuelve el Blob y el nombre de archivo sugerido por el backend
+// (Content-Disposition), o lanza ApiClientError igual que el resto si la respuesta falla.
+async function requestBlob(path) {
+  const finalHeaders = {};
+  const token = getToken();
+  if (token) finalHeaders.Authorization = `Bearer ${token}`;
+
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { headers: finalHeaders });
+  } catch (err) {
+    throw new ApiClientError(
+      'No se pudo conectar con el servidor. Verificá que el backend esté corriendo.',
+      0,
+      err
+    );
+  }
+
+  if (!res.ok) {
+    let payload = null;
+    try {
+      payload = await res.json();
+    } catch {
+      // el error tampoco vino en JSON, se usa el mensaje genérico de abajo
+    }
+    throw new ApiClientError(payload?.message || `Error ${res.status} al generar el archivo.`, res.status, payload);
+  }
+
+  const disposition = res.headers.get('Content-Disposition') || '';
+  const match = disposition.match(/filename="([^"]+)"/);
+
+  return { blob: await res.blob(), filename: match ? match[1] : 'archivo' };
+}
+
 export const api = {
   get: (path, opts) => request(path, { ...opts, method: 'GET' }),
   post: (path, body, opts) => request(path, { ...opts, method: 'POST', body }),
   put: (path, body, opts) => request(path, { ...opts, method: 'PUT', body }),
   patch: (path, body, opts) => request(path, { ...opts, method: 'PATCH', body }),
   delete: (path, opts) => request(path, { ...opts, method: 'DELETE' }),
+  download: (path) => requestBlob(path),
 };
