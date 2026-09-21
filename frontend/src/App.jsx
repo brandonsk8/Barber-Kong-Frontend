@@ -12,6 +12,7 @@ import ResetPassword from './pages/auth/ResetPassword.jsx';
 
 import Booking from './pages/cliente/Booking.jsx';
 import MisCitas from './pages/cliente/MisCitas.jsx';
+import MiCuenta from './pages/account/MiCuenta.jsx';
 
 import Agenda from './pages/barbero/Agenda.jsx';
 
@@ -19,6 +20,7 @@ import Seguridad from './pages/account/Seguridad.jsx';
 
 import AdminLayout from './pages/admin/AdminLayout.jsx';
 import AdminCitas from './pages/admin/AdminCitas.jsx';
+import AdminBarberos from './pages/admin/AdminBarberos.jsx';
 import AdminClientes from './pages/admin/AdminClientes.jsx';
 import AdminServicios from './pages/admin/AdminServicios.jsx';
 import AdminInventario from './pages/admin/AdminInventario.jsx';
@@ -34,6 +36,15 @@ export default function App() {
       <Route path="/verificar-2fa" element={<VerifyTwoFactor />} />
       <Route path="/recuperar" element={<ForgotPassword />} />
       <Route path="/restablecer" element={<ResetPassword />} />
+
+      <Route
+        path="/cuenta"
+        element={
+          <ProtectedRoute>
+            <MiCuenta />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/agendar"
@@ -80,6 +91,7 @@ export default function App() {
       >
         <Route index element={<Navigate to="citas" replace />} />
         <Route path="citas" element={<AdminCitas />} />
+        <Route path="barberos" element={<AdminBarberos />} />
         <Route path="clientes" element={<AdminClientes />} />
         <Route path="servicios" element={<AdminServicios />} />
         <Route path="inventario" element={<AdminInventario />} />

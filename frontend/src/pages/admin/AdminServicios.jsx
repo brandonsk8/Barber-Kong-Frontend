@@ -17,7 +17,6 @@ export default function AdminServicios() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
-
   const [insumosTarget, setInsumosTarget] = useState(null);
   const [insumosAsociados, setInsumosAsociados] = useState([]);
   const [catalogoInsumos, setCatalogoInsumos] = useState([]);
@@ -199,6 +198,9 @@ export default function AdminServicios() {
                     </button>
                     <button type="button" onClick={() => openEdit(s)}>
                       Editar
+                    </button>
+                    <button type="button" onClick={() => setInsumosServicio(s)}>
+                      Insumos
                     </button>
                     {s.is_active && (
                       <button type="button" onClick={() => handleDeactivate(s.id)}>

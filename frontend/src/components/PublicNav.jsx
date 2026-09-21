@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import NotificationsBell from './NotificationsBell.jsx';
 
 function homeForRole(role) {
   if (role === 'admin') return '/admin';
@@ -22,7 +23,11 @@ export default function PublicNav() {
       </div>
       {isAuthenticated ? (
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <NotificationsBell />
           <Link className="btn btn-outline btn-sm" to={homeForRole(user.role)}>
+            Panel
+          </Link>
+          <Link className="btn btn-outline btn-sm" to="/cuenta">
             Mi cuenta
           </Link>
           <button className="btn btn-ghost btn-sm" onClick={logout} type="button">

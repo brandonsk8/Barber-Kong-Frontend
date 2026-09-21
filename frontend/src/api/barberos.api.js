@@ -5,6 +5,7 @@
 // sin login) igual que /api/servicios.
 //
 //   GET    /api/barberos            (público) -> lista de barberos activos
+//   GET    /api/barberos/admin      (admin) -> lista completa, incluye inactivos
 //   GET    /api/barberos/:id        (público)
 //   GET    /api/barberos/:id/disponibilidad?fecha=YYYY-MM-DD -> horas libres/ocupadas
 //   POST   /api/barberos            (admin)
@@ -14,6 +15,7 @@ import { api } from './client.js';
 
 export const barberosApi = {
   listActive: () => api.get('/barberos', { auth: false }),
+  listAll: () => api.get('/barberos/admin'),
   getById: (id) => api.get(`/barberos/${id}`, { auth: false }),
   getDisponibilidad: (id, fecha) =>
     api.get(`/barberos/${id}/disponibilidad?fecha=${fecha}`, { auth: false }),

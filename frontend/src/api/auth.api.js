@@ -10,10 +10,9 @@
 //   POST /api/auth/forgot-password { email } -> { message }
 //   POST /api/auth/reset-password  { token, password } -> { message }
 //   GET  /api/auth/me              (Bearer token) -> { user }
-//   PUT  /api/auth/2fa             { enabled, password } -> { user }
-//
-// Si Brandon define rutas distintas al implementar EP-01, este es el único archivo
-// que hay que tocar — el resto de la app llama a authApi.*, no a fetch directo.
+//   PUT  /api/auth/2fa             { enabled, password } -> { user }  (RF-AUT-07,
+//                                    pide la contraseña actual porque es un cambio de
+//                                    seguridad)
 import { api } from './client.js';
 
 export const authApi = {

@@ -20,12 +20,13 @@ export default function AdminClientes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [estado, setEstado] = useState('activos'); // BK-24 (HU-15): activos | inactivos
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
-
+  const [busyId, setBusyId] = useState(null);
   const [historialTarget, setHistorialTarget] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [historialLoading, setHistorialLoading] = useState(false);
@@ -35,7 +36,7 @@ export default function AdminClientes() {
     setLoading(true);
     setError('');
     try {
-      const res = await clientesApi.list(search);
+      const res = await clientesApi.list(search, estado);
       setClientes(res || []);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'No se pudieron cargar los clientes.');
@@ -47,7 +48,21 @@ export default function AdminClientes() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [estado]);
+
+  // BK-24 (HU-15) — contraparte de desactivar: ahora que la lista puede filtrar por
+  // inactivos, este botón sí es alcanzable desde la UI.
+  async function handleActivate(cliente) {
+    setBusyId(cliente.id);
+    try {
+      await clientesApi.activate(cliente.id);
+      load();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : 'No se pudo reactivar al cliente.');
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   function openCreate() {
     setEditing(null);
@@ -61,6 +76,38 @@ export default function AdminClientes() {
     setForm({ nombre: cliente.nombre, telefono: cliente.telefono || '', correo: cliente.correo || '' });
     setFormError('');
     setModalOpen(true);
+  }
+
+  // HU-15 (UC-11) — desactivar el registro de un cliente (baja lógica).
+  async function handleDeactivate(cliente) {
+    if (!window.confirm(`¿Desactivar a ${cliente.nombre}? Ya no aparecerá en el listado.`)) return;
+    setBusyId(cliente.id);
+    try {
+      await clientesApi.deactivate(cliente.id);
+      load();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : 'No se pudo desactivar al cliente.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // HU-14 (UC-10) — historial de citas y servicios recibidos por el cliente.
+  async function openHistorial(cliente) {
+    setHistorialTarget(cliente);
+    setHistorial([]);
+    setHistorialError('');
+    setHistorialLoading(true);
+    try {
+      const res = await clientesApi.historial(cliente.id);
+      setHistorial(res || []);
+    } catch (err) {
+      setHistorialError(
+        err instanceof ApiClientError ? err.message : 'No se pudo cargar el historial del cliente.'
+      );
+    } finally {
+      setHistorialLoading(false);
+    }
   }
 
   async function handleSave(e) {
@@ -79,33 +126,6 @@ export default function AdminClientes() {
     }
   }
 
-  async function handleDeactivate(cliente) {
-    if (!window.confirm(`¿Desactivar a ${cliente.nombre}? Ya no aparecerá en el listado.`)) return;
-    try {
-      await clientesApi.deactivate(cliente.id);
-      load();
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'No se pudo desactivar el cliente.');
-    }
-  }
-
-  async function openHistorial(cliente) {
-    setHistorialTarget(cliente);
-    setHistorial([]);
-    setHistorialError('');
-    setHistorialLoading(true);
-    try {
-      const res = await clientesApi.historial(cliente.id);
-      setHistorial(res || []);
-    } catch (err) {
-      setHistorialError(
-        err instanceof ApiClientError ? err.message : 'No se pudo cargar el historial del cliente.'
-      );
-    } finally {
-      setHistorialLoading(false);
-    }
-  }
-
   return (
     <div>
       <div className="admin-top">
@@ -120,13 +140,31 @@ export default function AdminClientes() {
         </button>
       </div>
 
-      <div className="field" style={{ maxWidth: 320 }}>
-        <input
-          placeholder="Buscar por nombre o teléfono…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && load()}
-        />
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <div className="field" style={{ maxWidth: 320, margin: 0 }}>
+          <input
+            placeholder="Buscar por nombre o teléfono…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && load()}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button
+            type="button"
+            className={`btn btn-sm ${estado === 'activos' ? 'btn-gold' : 'btn-outline'}`}
+            onClick={() => setEstado('activos')}
+          >
+            Activos
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${estado === 'inactivos' ? 'btn-gold' : 'btn-outline'}`}
+            onClick={() => setEstado('inactivos')}
+          >
+            Inactivos
+          </button>
+        </div>
       </div>
 
       {error && <Alert type="error">{error}</Alert>}
@@ -161,9 +199,15 @@ export default function AdminClientes() {
                     <button type="button" onClick={() => openEdit(c)}>
                       Editar
                     </button>
-                    <button type="button" onClick={() => handleDeactivate(c)}>
-                      Desactivar
-                    </button>
+                    {estado === 'inactivos' ? (
+                      <button type="button" disabled={busyId === c.id} onClick={() => handleActivate(c)}>
+                        {busyId === c.id ? 'Guardando…' : 'Reactivar'}
+                      </button>
+                    ) : (
+                      <button type="button" disabled={busyId === c.id} onClick={() => handleDeactivate(c)}>
+                        {busyId === c.id ? 'Guardando…' : 'Desactivar'}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
