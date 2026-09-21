@@ -7,6 +7,7 @@ const LINKS = [
   { to: '/admin/servicios', label: 'Servicios' },
   { to: '/admin/inventario', label: 'Inventario' },
   { to: '/admin/reportes', label: 'Reportes' },
+  { to: '/seguridad', label: 'Seguridad' },
 ];
 
 export default function AdminLayout() {
