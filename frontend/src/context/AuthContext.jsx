@@ -69,8 +69,8 @@ export function AuthProvider({ children }) {
 
   const register = useCallback((data) => authApi.register(data), []);
 
-  // Actualiza el usuario en memoria/localStorage sin tocar el token (p. ej. después
-  // de activar/desactivar 2FA, que no emite un token nuevo).
+  // Para cambios de perfil que no emiten un token nuevo (p. ej. activar/desactivar
+  // 2FA) — actualiza el usuario en memoria y en localStorage sin tocar la sesión.
   const updateUser = useCallback((nextUser) => {
     setUser(nextUser);
     localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
