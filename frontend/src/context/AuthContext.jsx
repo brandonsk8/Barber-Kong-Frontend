@@ -69,6 +69,13 @@ export function AuthProvider({ children }) {
 
   const register = useCallback((data) => authApi.register(data), []);
 
+  // Actualiza el usuario en memoria/localStorage sin tocar el token (p. ej. después
+  // de activar/desactivar 2FA, que no emite un token nuevo).
+  const updateUser = useCallback((nextUser) => {
+    setUser(nextUser);
+    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -82,6 +89,7 @@ export function AuthProvider({ children }) {
     login,
     verifyTwoFactor,
     register,
+    updateUser,
     logout,
   };
 

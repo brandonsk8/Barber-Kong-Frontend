@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import PublicNav from '../../components/PublicNav.jsx';
 import Spinner from '../../components/Spinner.jsx';
 import Alert from '../../components/Alert.jsx';
 import { serviciosApi } from '../../api/servicios.api.js';
 import { barberosApi } from '../../api/barberos.api.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DIAS_ABIERTOS = [0, 1, 2, 3, 4]; // domingo a jueves, según PLAN_FASE2.md
@@ -19,6 +20,7 @@ function initials(nombre = '') {
 }
 
 export default function Landing() {
+  const { user, isAuthenticated } = useAuth();
   const [servicios, setServicios] = useState([]);
   const [barberos, setBarberos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,13 @@ export default function Landing() {
       cancelled = true;
     };
   }, []);
+
+  // Un barbero o admin logueado no tiene por qué ver la landing pública (p. ej. al
+  // hacer clic en el logo) — se les manda directo a su panel. El cliente sí puede
+  // seguir viendo la landing (le sirve para revisar servicios/barberos otra vez).
+  // Va después de todos los hooks para no romper las reglas de hooks de React.
+  if (isAuthenticated && user.role === 'admin') return <Navigate to="/admin" replace />;
+  if (isAuthenticated && user.role === 'barbero') return <Navigate to="/barbero/agenda" replace />;
 
   return (
     <div>

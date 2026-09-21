@@ -69,10 +69,65 @@ async function request(path, { method = 'GET', body, auth = true, headers = {} }
   return payload;
 }
 
+// Para respuestas binarias (reportes en PDF/Excel, EP-06): a diferencia de request(),
+// nunca intenta leer el cuerpo como texto/JSON en el camino feliz, y dispara la
+// descarga en el navegador usando el nombre de archivo real que manda el backend en
+// Content-Disposition (expuesto vía CORS — ver src/server/app.js del backend).
+async function downloadFile(path, { auth = true } = {}) {
+  const headers = {};
+  if (auth) {
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { headers });
+  } catch (err) {
+    throw new ApiClientError(
+      'No se pudo conectar con el servidor. Verificá que el backend esté corriendo.',
+      0,
+      err
+    );
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    let payload = null;
+    if (text) {
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        payload = { message: text };
+      }
+    }
+    throw new ApiClientError(
+      payload?.message || `Error ${res.status} al generar el reporte.`,
+      res.status,
+      payload
+    );
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get('Content-Disposition') || '';
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : 'reporte';
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   get: (path, opts) => request(path, { ...opts, method: 'GET' }),
   post: (path, body, opts) => request(path, { ...opts, method: 'POST', body }),
   put: (path, body, opts) => request(path, { ...opts, method: 'PUT', body }),
   patch: (path, body, opts) => request(path, { ...opts, method: 'PATCH', body }),
   delete: (path, opts) => request(path, { ...opts, method: 'DELETE' }),
+  download: (path, opts) => downloadFile(path, opts),
 };

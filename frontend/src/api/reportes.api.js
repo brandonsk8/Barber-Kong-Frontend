@@ -1,17 +1,13 @@
-// EP-06 (Sprint 3 / cierre de Fase 2) — src/modules/reportes está en stub. Contrato
-// asumido según PLAN_FASE2.md (citas por rango, ingresos por barbero, consumo de
-// insumos, exportación PDF/Excel).
+// EP-06 (Sprint 3 / cierre de Fase 2) — implementado por Miguel en el backend real.
+// A diferencia del contrato que se había asumido antes (una ruta JSON por tipo de
+// reporte), es un único endpoint parametrizado que devuelve directamente el archivo
+// (PDF o Excel) para descargar, no datos para graficar en pantalla.
 //
-//   GET /api/reportes/citas?desde=&hasta=              -> resumen + detalle
-//   GET /api/reportes/ingresos-por-barbero?desde=&hasta=
-//   GET /api/reportes/consumo-insumos?desde=&hasta=
-//   GET /api/reportes/citas.pdf | .xlsx  (descarga)     -> igual para los otros dos
+//   GET /api/reportes?tipo=citas|ingresos|insumos&formato=pdf|excel&desde=&hasta=
+//   -> descarga el archivo generado (admin)
 import { api } from './client.js';
 
-const qs = (params) => new URLSearchParams(params).toString();
-
 export const reportesApi = {
-  citasPorRango: (params) => api.get(`/reportes/citas?${qs(params)}`),
-  ingresosPorBarbero: (params) => api.get(`/reportes/ingresos-por-barbero?${qs(params)}`),
-  consumoInsumos: (params) => api.get(`/reportes/consumo-insumos?${qs(params)}`),
+  descargar: ({ tipo, formato, desde, hasta }) =>
+    api.download(`/reportes?${new URLSearchParams({ tipo, formato, desde, hasta }).toString()}`),
 };
