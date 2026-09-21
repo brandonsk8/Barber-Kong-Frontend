@@ -69,20 +69,18 @@ async function request(path, { method = 'GET', body, auth = true, headers = {} }
   return payload;
 }
 
-// Para respuestas binarias (reportes en PDF/Excel, EP-06): a diferencia de request(),
-// nunca intenta leer el cuerpo como texto/JSON en el camino feliz, y dispara la
-// descarga en el navegador usando el nombre de archivo real que manda el backend en
-// Content-Disposition (expuesto vía CORS — ver src/server/app.js del backend).
-async function downloadFile(path, { auth = true } = {}) {
-  const headers = {};
-  if (auth) {
-    const token = getToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
+// Para endpoints que devuelven un archivo (p. ej. /reportes, PDF/Excel) en vez de JSON
+// — request() de arriba siempre intenta parsear el body como texto/JSON, lo que
+// corrompe un binario. Devuelve el Blob y el nombre de archivo sugerido por el backend
+// (Content-Disposition), o lanza ApiClientError igual que el resto si la respuesta falla.
+async function requestBlob(path) {
+  const finalHeaders = {};
+  const token = getToken();
+  if (token) finalHeaders.Authorization = `Bearer ${token}`;
 
   let res;
   try {
-    res = await fetch(`${BASE_URL}${path}`, { headers });
+    res = await fetch(`${BASE_URL}${path}`, { headers: finalHeaders });
   } catch (err) {
     throw new ApiClientError(
       'No se pudo conectar con el servidor. Verificá que el backend esté corriendo.',
@@ -92,35 +90,19 @@ async function downloadFile(path, { auth = true } = {}) {
   }
 
   if (!res.ok) {
-    const text = await res.text();
     let payload = null;
-    if (text) {
-      try {
-        payload = JSON.parse(text);
-      } catch {
-        payload = { message: text };
-      }
+    try {
+      payload = await res.json();
+    } catch {
+      // el error tampoco vino en JSON, se usa el mensaje genérico de abajo
     }
-    throw new ApiClientError(
-      payload?.message || `Error ${res.status} al generar el reporte.`,
-      res.status,
-      payload
-    );
+    throw new ApiClientError(payload?.message || `Error ${res.status} al generar el archivo.`, res.status, payload);
   }
 
-  const blob = await res.blob();
   const disposition = res.headers.get('Content-Disposition') || '';
-  const match = disposition.match(/filename="?([^"]+)"?/);
-  const filename = match ? match[1] : 'reporte';
+  const match = disposition.match(/filename="([^"]+)"/);
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  return { blob: await res.blob(), filename: match ? match[1] : 'archivo' };
 }
 
 export const api = {
@@ -129,5 +111,5 @@ export const api = {
   put: (path, body, opts) => request(path, { ...opts, method: 'PUT', body }),
   patch: (path, body, opts) => request(path, { ...opts, method: 'PATCH', body }),
   delete: (path, opts) => request(path, { ...opts, method: 'DELETE' }),
-  download: (path, opts) => downloadFile(path, opts),
+  download: (path) => requestBlob(path),
 };
