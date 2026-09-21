@@ -205,25 +205,23 @@ export default function Agenda() {
             <p className="eyebrow">Barbero</p>
             <h2 style={{ fontSize: 26 }}>Hola, {user?.nombre?.split(' ')[0] || user?.email}</h2>
           </div>
-          <div className="view-toggle" style={{ display: 'flex', gap: 4 }}>
-            <button
-              type="button"
-              className={`btn btn-sm ${vista === 'dia' ? 'btn-gold' : 'btn-outline'}`}
-              onClick={() => setVista('dia')}
-            >
-              Diaria
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${vista === 'semana' ? 'btn-gold' : 'btn-outline'}`}
-              onClick={() => setVista('semana')}
-            >
-              Semanal
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div className="toggle-group">
+              <button type="button" className={vista === 'dia' ? 'active' : ''} onClick={() => setVista('dia')}>
+                Diaria
+              </button>
+              <button
+                type="button"
+                className={vista === 'semana' ? 'active' : ''}
+                onClick={() => setVista('semana')}
+              >
+                Semanal
+              </button>
+            </div>
+            <button className="btn btn-gold btn-sm" type="button" onClick={() => setWalkinOpen(true)}>
+              + Walk-in
             </button>
           </div>
-          <button className="btn btn-gold btn-sm" type="button" onClick={() => setWalkinOpen(true)}>
-            + Walk-in
-          </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0 12px' }}>
           <button
@@ -326,64 +324,60 @@ export default function Agenda() {
         )}
 
         {/* BK-32 (HU-10) — vista semanal: grilla hora x día, dom-jue (horario de
-            atención); vie/sáb se muestran atenuados porque no se agendan citas ahí. */}
+            atención). Vie/sáb quedan marcados como cerrados solo en el encabezado
+            (una vez), en vez de repetir "cerrado" en cada celda de esa columna. */}
         {!loading && vista === 'semana' && (
-          <div className="table-wrap">
-            <table className="data-table agenda-week-table">
-              <thead>
-                <tr>
-                  <th>Hora</th>
-                  {semana.map((d) => (
-                    <th key={d.iso} style={{ opacity: d.open ? 1 : 0.4, textAlign: 'center' }}>
-                      {d.dow} {d.dayNumber}
-                      {d.iso === hoy && ' (hoy)'}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {horas.map((h) => (
-                  <tr key={h.value} style={h.blocked ? { opacity: 0.5 } : undefined}>
-                    <td>{h.value}</td>
-                    {semana.map((d) => {
-                      if (h.blocked) {
-                        return (
-                          <td key={d.iso} style={{ textAlign: 'center', fontSize: 12 }}>
-                            —
-                          </td>
-                        );
-                      }
-                      const cita = porDiaYHora[`${d.iso}|${h.value}`];
-                      if (!d.open) {
-                        return (
-                          <td key={d.iso} style={{ textAlign: 'center', opacity: 0.35, fontSize: 12 }}>
-                            cerrado
-                          </td>
-                        );
-                      }
-                      if (!cita) {
-                        return <td key={d.iso} />;
-                      }
-                      return (
-                        <td key={d.iso}>
-                          <div style={{ fontSize: 12 }}>
+          <div className="agenda-week">
+            <div className="agenda-week-header">
+              <div />
+              {semana.map((d) => (
+                <div
+                  key={d.iso}
+                  className={[!d.open && 'closed', d.iso === hoy && 'today'].filter(Boolean).join(' ')}
+                >
+                  {d.dow} {d.dayNumber}
+                  {d.iso === hoy && ' · hoy'}
+                </div>
+              ))}
+            </div>
+
+            {horas.map((h) =>
+              h.blocked ? (
+                <div className="agenda-week-row lunch" key={h.value}>
+                  <div className="agenda-week-hour">{h.value}</div>
+                  <div className="agenda-week-lunch-label">Receso de almuerzo</div>
+                </div>
+              ) : (
+                <div className="agenda-week-row" key={h.value}>
+                  <div className="agenda-week-hour">{h.value}</div>
+                  {semana.map((d) => {
+                    const cita = d.open ? porDiaYHora[`${d.iso}|${h.value}`] : null;
+                    return (
+                      <div
+                        key={d.iso}
+                        className={[
+                          'agenda-week-cell',
+                          !d.open && 'closed',
+                          d.iso === hoy && 'today',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      >
+                        {cita && (
+                          <div className="agenda-week-appt">
                             <strong>{cita.cliente_nombre || cita.cliente?.nombre || 'Walk-in'}</strong>
-                            <br />
-                            <span style={{ color: 'var(--muted)' }}>
-                              {cita.servicio_nombre || cita.servicio?.nombre}
-                            </span>
-                            <br />
+                            <span className="svc">{cita.servicio_nombre || cita.servicio?.nombre}</span>
                             <span className={`status-pill ${ESTADO_PILL[cita.estado] || 'wait'}`}>
                               {cita.estado}
                             </span>
                           </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            )}
           </div>
         )}
       </div>
