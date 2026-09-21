@@ -25,9 +25,6 @@ export default function PublicNav() {
           <Link className="btn btn-outline btn-sm" to={homeForRole(user.role)}>
             Mi cuenta
           </Link>
-          <Link className="btn btn-ghost btn-sm" to="/seguridad">
-            Seguridad
-          </Link>
           <button className="btn btn-ghost btn-sm" onClick={logout} type="button">
             Salir
           </button>
