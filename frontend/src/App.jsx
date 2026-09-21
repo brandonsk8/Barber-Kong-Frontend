@@ -15,6 +15,8 @@ import MisCitas from './pages/cliente/MisCitas.jsx';
 
 import Agenda from './pages/barbero/Agenda.jsx';
 
+import Seguridad from './pages/account/Seguridad.jsx';
+
 import AdminLayout from './pages/admin/AdminLayout.jsx';
 import AdminCitas from './pages/admin/AdminCitas.jsx';
 import AdminClientes from './pages/admin/AdminClientes.jsx';
@@ -46,6 +48,15 @@ export default function App() {
         element={
           <ProtectedRoute roles={['cliente']}>
             <MisCitas />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/seguridad"
+        element={
+          <ProtectedRoute>
+            <Seguridad />
           </ProtectedRoute>
         }
       />
