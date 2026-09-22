@@ -11,8 +11,8 @@
 //   POST /api/auth/reset-password  { token, password } -> { message }
 //   GET  /api/auth/me              (Bearer token) -> { user }
 //   PUT  /api/auth/2fa             { enabled, password } -> { user }  (RF-AUT-07,
-//                                    implementado por Miguel — pide la contraseña
-//                                    actual porque es un cambio de seguridad)
+//                                    pide la contraseña actual porque es un cambio de
+//                                    seguridad)
 import { api } from './client.js';
 
 export const authApi = {

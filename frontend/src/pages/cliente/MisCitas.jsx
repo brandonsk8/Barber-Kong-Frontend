@@ -42,99 +42,98 @@ function CitaRow({ cita, onCancelar, onReprogramar }) {
   );
 }
 
-// HU-08 (UC-05) — reprogramar una cita ya agendada a un nuevo horario disponible.
-// El backend ya exponía PUT /api/citas/:id, pero no tenía ningún control en pantalla
-// que lo llamara. Reutiliza el mismo picker de día/hora que Booking.jsx (paso 3).
-function ReprogramarModal({ cita, onClose, onSaved }) {
-  const [fecha, setFecha] = useState(cita.fecha);
+function ReprogramarModal({ cita, onClose, onDone }) {
+  const dias = useMemo(() => upcomingDays(7), []);
+  const horas = useMemo(() => defaultTimeSlots(), []);
+  const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
   const [ocupadas, setOcupadas] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const dias = useMemo(() => upcomingDays(7), []);
-  const horas = useMemo(() => defaultTimeSlots(), []);
-
   useEffect(() => {
-    let cancelled = false;
-    async function loadDisponibilidad() {
-      try {
-        const res = await barberosApi.getDisponibilidad(cita.barbero_id, fecha);
-        if (!cancelled) setOcupadas(res?.ocupadas || []);
-      } catch {
-        if (!cancelled) setOcupadas([]);
-      }
+    if (!fecha) {
+      setOcupadas([]);
+      return;
     }
-    if (fecha) loadDisponibilidad();
+    let cancelled = false;
+    barberosApi
+      .getDisponibilidad(cita.barbero_id, fecha)
+      .then((res) => {
+        if (!cancelled) setOcupadas(res?.ocupadas || []);
+      })
+      .catch(() => {
+        if (!cancelled) setOcupadas([]);
+      });
     return () => {
       cancelled = true;
     };
   }, [cita.barbero_id, fecha]);
 
-  async function handleConfirmar() {
-    setError('');
+  async function handleSubmit(e) {
+    e.preventDefault();
     setSaving(true);
+    setError('');
     try {
       await citasApi.reprogramar(cita.id, { fecha, hora_inicio: hora });
-      onSaved();
+      onDone();
     } catch (err) {
-      setError(
-        err instanceof ApiClientError ? err.message : 'No se pudo reprogramar la cita. Intentá de nuevo.'
-      );
+      setError(err instanceof ApiClientError ? err.message : 'No se pudo reprogramar la cita.');
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <Modal title={`Reprogramar: ${cita.servicio_nombre || cita.servicio?.nombre}`} onClose={onClose}>
+    <Modal title="Reprogramar cita" onClose={onClose}>
       {error && <Alert type="error">{error}</Alert>}
-
-      <p className="picker-title">Elegí nueva fecha</p>
-      <div className="day-grid">
-        {dias.map((d) => (
-          <button
-            key={d.iso}
-            type="button"
-            disabled={!d.open}
-            className={`day-cell ${d.open ? 'selectable' : 'disabled'} ${fecha === d.iso ? 'selected' : ''}`}
-            onClick={() => {
-              setFecha(d.iso);
-              setHora('');
-            }}
-          >
-            <span className="dow">{d.dow}</span>
-            {d.dayNumber}
-          </button>
-        ))}
-      </div>
-
-      <p className="picker-title">Elegí nueva hora</p>
-      <div className="time-grid">
-        {horas.map((h) => {
-          const blocked = h.blocked || ocupadas.includes(h.value);
-          return (
+      <form onSubmit={handleSubmit}>
+        <p className="picker-title">Elegí nueva fecha</p>
+        <div className="day-grid">
+          {dias.map((d) => (
             <button
-              key={h.value}
+              key={d.iso}
               type="button"
-              disabled={!fecha || blocked}
-              className={`time-slot ${blocked ? 'blocked' : 'free'} ${hora === h.value ? 'selected' : ''}`}
-              onClick={() => setHora(h.value)}
+              disabled={!d.open}
+              className={`day-cell ${d.open ? 'selectable' : 'disabled'} ${fecha === d.iso ? 'selected' : ''}`}
+              onClick={() => {
+                setFecha(d.iso);
+                setHora('');
+              }}
             >
-              {h.label.replace(' a.m.', '').replace(' p.m.', '')}
+              <span className="dow">{d.dow}</span>
+              {d.dayNumber}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      <div className="modal-actions">
-        <button className="btn btn-ghost" type="button" onClick={onClose}>
-          Cancelar
-        </button>
-        <button className="btn btn-gold" type="button" disabled={!fecha || !hora || saving} onClick={handleConfirmar}>
-          {saving ? 'Guardando…' : 'Confirmar nuevo horario'}
-        </button>
-      </div>
+        <p className="picker-title">Elegí nueva hora</p>
+        <div className="time-grid">
+          {horas.map((h) => {
+            const blocked = h.blocked || ocupadas.includes(h.value);
+            return (
+              <button
+                key={h.value}
+                type="button"
+                disabled={!fecha || blocked}
+                className={`time-slot ${blocked ? 'blocked' : 'free'} ${hora === h.value ? 'selected' : ''}`}
+                onClick={() => setHora(h.value)}
+              >
+                {h.label.replace(' a.m.', '').replace(' p.m.', '')}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="modal-actions">
+          <button className="btn btn-ghost" type="button" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="btn btn-gold" type="submit" disabled={!fecha || !hora || saving}>
+            {saving ? 'Guardando…' : 'Confirmar cambio'}
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }
@@ -143,7 +142,7 @@ export default function MisCitas({ embedded = false, refreshToken }) {
   const [citas, setCitas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [reprogramando, setReprogramando] = useState(null);
+  const [reprogramarTarget, setReprogramarTarget] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -189,28 +188,31 @@ export default function MisCitas({ embedded = false, refreshToken }) {
       {!loading &&
         !error &&
         citas.map((c) => (
-          <CitaRow cita={c} key={c.id} onCancelar={handleCancelar} onReprogramar={setReprogramando} />
+          <CitaRow cita={c} key={c.id} onCancelar={handleCancelar} onReprogramar={setReprogramarTarget} />
         ))}
+    </div>
+  );
 
-      {reprogramando && (
+  return (
+    <>
+      {embedded ? (
+        content
+      ) : (
+        <div>
+          <PublicNav />
+          <div className="booking-wrap">{content}</div>
+        </div>
+      )}
+      {reprogramarTarget && (
         <ReprogramarModal
-          cita={reprogramando}
-          onClose={() => setReprogramando(null)}
-          onSaved={() => {
-            setReprogramando(null);
+          cita={reprogramarTarget}
+          onClose={() => setReprogramarTarget(null)}
+          onDone={() => {
+            setReprogramarTarget(null);
             load();
           }}
         />
       )}
-    </div>
-  );
-
-  if (embedded) return content;
-
-  return (
-    <div>
-      <PublicNav />
-      <div className="booking-wrap">{content}</div>
-    </div>
+    </>
   );
 }

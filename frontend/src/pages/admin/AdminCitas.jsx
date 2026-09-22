@@ -151,6 +151,7 @@ export default function AdminCitas() {
 
   async function load() {
     setLoading(true);
+    setError('');
     try {
       const hoy = toISODate(new Date());
       const res = await citasApi.listarPorRango({ desde: hoy, hasta: hoy });
@@ -170,6 +171,7 @@ export default function AdminCitas() {
   // HU-09 (UC-06) — el administrador también puede cancelar una cita activa, no solo
   // el cliente dueño de la cita (eso ya lo cubre MisCitas.jsx).
   async function handleCancelar(id) {
+    if (!window.confirm('¿Cancelar esta cita?')) return;
     setBusyId(id);
     try {
       await citasApi.cancelar(id);
@@ -246,7 +248,7 @@ export default function AdminCitas() {
                   <td className="row-actions">
                     {['pendiente', 'confirmada'].includes(c.estado) && (
                       <button type="button" disabled={busyId === c.id} onClick={() => handleCancelar(c.id)}>
-                        {busyId === c.id ? 'Guardando…' : 'Cancelar'}
+                        {busyId === c.id ? 'Cancelando…' : 'Cancelar'}
                       </button>
                     )}
                   </td>

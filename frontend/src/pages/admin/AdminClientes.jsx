@@ -4,8 +4,16 @@ import Alert from '../../components/Alert.jsx';
 import Modal from '../../components/Modal.jsx';
 import { clientesApi } from '../../api/clientes.api.js';
 import { ApiClientError } from '../../api/client.js';
+import { formatFechaLarga } from '../../utils/date.js';
 
 const EMPTY_FORM = { nombre: '', telefono: '', correo: '' };
+
+const ESTADO_PILL = {
+  confirmada: 'ok',
+  atendida: 'ok',
+  pendiente: 'wait',
+  cancelada: 'cancel',
+};
 
 export default function AdminClientes() {
   const [clientes, setClientes] = useState([]);
@@ -19,7 +27,7 @@ export default function AdminClientes() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [busyId, setBusyId] = useState(null);
-  const [historialCliente, setHistorialCliente] = useState(null);
+  const [historialTarget, setHistorialTarget] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [historialLoading, setHistorialLoading] = useState(false);
   const [historialError, setHistorialError] = useState('');
@@ -72,7 +80,7 @@ export default function AdminClientes() {
 
   // HU-15 (UC-11) — desactivar el registro de un cliente (baja lógica).
   async function handleDeactivate(cliente) {
-    if (!window.confirm(`¿Desactivar a ${cliente.nombre}?`)) return;
+    if (!window.confirm(`¿Desactivar a ${cliente.nombre}? Ya no aparecerá en el listado.`)) return;
     setBusyId(cliente.id);
     try {
       await clientesApi.deactivate(cliente.id);
@@ -85,8 +93,8 @@ export default function AdminClientes() {
   }
 
   // HU-14 (UC-10) — historial de citas y servicios recibidos por el cliente.
-  async function handleVerHistorial(cliente) {
-    setHistorialCliente(cliente);
+  async function openHistorial(cliente) {
+    setHistorialTarget(cliente);
     setHistorial([]);
     setHistorialError('');
     setHistorialLoading(true);
@@ -94,7 +102,9 @@ export default function AdminClientes() {
       const res = await clientesApi.historial(cliente.id);
       setHistorial(res || []);
     } catch (err) {
-      setHistorialError(err instanceof ApiClientError ? err.message : 'No se pudo cargar el historial.');
+      setHistorialError(
+        err instanceof ApiClientError ? err.message : 'No se pudo cargar el historial del cliente.'
+      );
     } finally {
       setHistorialLoading(false);
     }
@@ -183,7 +193,7 @@ export default function AdminClientes() {
                   <td>{c.citas_totales ?? '—'}</td>
                   <td>{c.ultima_visita || '—'}</td>
                   <td className="row-actions">
-                    <button type="button" onClick={() => handleVerHistorial(c)}>
+                    <button type="button" onClick={() => openHistorial(c)}>
                       Historial
                     </button>
                     <button type="button" onClick={() => openEdit(c)}>
@@ -255,8 +265,8 @@ export default function AdminClientes() {
         </Modal>
       )}
 
-      {historialCliente && (
-        <Modal title={`Historial de ${historialCliente.nombre}`} onClose={() => setHistorialCliente(null)}>
+      {historialTarget && (
+        <Modal title={`Historial — ${historialTarget.nombre}`} onClose={() => setHistorialTarget(null)}>
           {historialLoading && <Spinner />}
           {!historialLoading && historialError && <Alert type="error">{historialError}</Alert>}
           {!historialLoading && !historialError && historial.length === 0 && (
@@ -277,11 +287,13 @@ export default function AdminClientes() {
                 <tbody>
                   {historial.map((h) => (
                     <tr key={h.id}>
-                      <td>{h.fecha}</td>
+                      <td>{formatFechaLarga(h.fecha)}</td>
                       <td>{h.hora_inicio?.slice(0, 5)}</td>
                       <td>{h.servicio}</td>
                       <td>{h.barbero}</td>
-                      <td>{h.estado}</td>
+                      <td>
+                        <span className={`status-pill ${ESTADO_PILL[h.estado] || 'wait'}`}>{h.estado}</span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

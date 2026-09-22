@@ -8,159 +8,6 @@ import { ApiClientError } from '../../api/client.js';
 
 const EMPTY_FORM = { nombre: '', duracion_minutos: '', precio: '' };
 
-// HU-17 — modal para asociar insumos (receta de consumo) a un servicio.
-function InsumosModal({ servicio, onClose }) {
-  const [asociados, setAsociados] = useState([]);
-  const [catalogo, setCatalogo] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [insumoId, setInsumoId] = useState('');
-  const [cantidad, setCantidad] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [busyId, setBusyId] = useState(null);
-
-  async function load() {
-    setLoading(true);
-    setError('');
-    try {
-      const [insumosRes, catalogoRes] = await Promise.all([
-        serviciosApi.listInsumos(servicio.id),
-        inventarioApi.list(),
-      ]);
-      setAsociados(insumosRes || []);
-      setCatalogo(catalogoRes || []);
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'No se pudieron cargar los insumos.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [servicio.id]);
-
-  async function handleAsociar(e) {
-    e.preventDefault();
-    if (!insumoId || !cantidad) return;
-    setSaving(true);
-    setError('');
-    try {
-      await serviciosApi.asociarInsumo(servicio.id, {
-        insumo_id: insumoId,
-        cantidad_consumida: Number(cantidad),
-      });
-      setInsumoId('');
-      setCantidad('');
-      load();
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'No se pudo asociar el insumo.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleQuitar(insumoIdToRemove) {
-    setBusyId(insumoIdToRemove);
-    setError('');
-    try {
-      await serviciosApi.quitarInsumo(servicio.id, insumoIdToRemove);
-      load();
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'No se pudo quitar el insumo.');
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  const disponibles = catalogo.filter((c) => !asociados.some((a) => a.insumo_id === c.id));
-
-  return (
-    <Modal title={`Insumos de "${servicio.nombre}"`} onClose={onClose}>
-      {error && <Alert type="error">{error}</Alert>}
-      {loading ? (
-        <Spinner />
-      ) : (
-        <>
-          <table className="data-table" style={{ marginBottom: 16 }}>
-            <thead>
-              <tr>
-                <th>Insumo</th>
-                <th>Cantidad por servicio</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {asociados.map((a) => (
-                <tr key={a.insumo_id}>
-                  <td>{a.nombre || a.insumo_nombre}</td>
-                  <td>{a.cantidad_consumida}</td>
-                  <td className="row-actions">
-                    <button
-                      type="button"
-                      disabled={busyId === a.insumo_id}
-                      onClick={() => handleQuitar(a.insumo_id)}
-                    >
-                      {busyId === a.insumo_id ? 'Quitando…' : 'Quitar'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {asociados.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="empty-state">
-                    Este servicio todavía no tiene insumos asociados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          <form onSubmit={handleAsociar} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-            <div className="field" style={{ flex: 1, margin: 0 }}>
-              <label htmlFor="insumo">Insumo</label>
-              <select id="insumo" required value={insumoId} onChange={(e) => setInsumoId(e.target.value)}>
-                <option value="">Elegí un insumo…</option>
-                {disponibles.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field" style={{ width: 120, margin: 0 }}>
-              <label htmlFor="cantidad">Cantidad</label>
-              <input
-                id="cantidad"
-                type="number"
-                min="0.01"
-                step="0.01"
-                required
-                value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
-              />
-            </div>
-            <button className="btn btn-gold" type="submit" disabled={saving || disponibles.length === 0}>
-              {saving ? 'Agregando…' : 'Agregar'}
-            </button>
-          </form>
-          {disponibles.length === 0 && catalogo.length > 0 && (
-            <p className="empty-state" style={{ marginTop: 8 }}>
-              Ya asociaste todos los insumos del catálogo a este servicio.
-            </p>
-          )}
-          {catalogo.length === 0 && (
-            <p className="empty-state" style={{ marginTop: 8 }}>
-              No hay insumos registrados en el inventario todavía.
-            </p>
-          )}
-        </>
-      )}
-    </Modal>
-  );
-}
-
 export default function AdminServicios() {
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -170,7 +17,14 @@ export default function AdminServicios() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
-  const [insumosServicio, setInsumosServicio] = useState(null);
+  const [insumosTarget, setInsumosTarget] = useState(null);
+  const [insumosAsociados, setInsumosAsociados] = useState([]);
+  const [catalogoInsumos, setCatalogoInsumos] = useState([]);
+  const [insumosLoading, setInsumosLoading] = useState(false);
+  const [insumosError, setInsumosError] = useState('');
+  const [nuevoInsumoId, setNuevoInsumoId] = useState('');
+  const [nuevaCantidad, setNuevaCantidad] = useState('');
+  const [savingInsumo, setSavingInsumo] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -237,6 +91,66 @@ export default function AdminServicios() {
     }
   }
 
+  async function openInsumos(servicio) {
+    setInsumosTarget(servicio);
+    setInsumosError('');
+    setNuevoInsumoId('');
+    setNuevaCantidad('');
+    setInsumosLoading(true);
+    try {
+      const [asociados, catalogo] = await Promise.all([
+        serviciosApi.listInsumos(servicio.id),
+        catalogoInsumos.length ? catalogoInsumos : inventarioApi.list(),
+      ]);
+      setInsumosAsociados(asociados || []);
+      if (!catalogoInsumos.length) setCatalogoInsumos(catalogo || []);
+    } catch (err) {
+      setInsumosError(
+        err instanceof ApiClientError ? err.message : 'No se pudo cargar la información de insumos.'
+      );
+    } finally {
+      setInsumosLoading(false);
+    }
+  }
+
+  async function reloadInsumosAsociados() {
+    const res = await serviciosApi.listInsumos(insumosTarget.id);
+    setInsumosAsociados(res || []);
+  }
+
+  async function handleAsociar(e) {
+    e.preventDefault();
+    setInsumosError('');
+    setSavingInsumo(true);
+    try {
+      await serviciosApi.asociarInsumo(insumosTarget.id, {
+        insumo_id: nuevoInsumoId,
+        cantidad_consumida: Number(nuevaCantidad),
+      });
+      setNuevoInsumoId('');
+      setNuevaCantidad('');
+      await reloadInsumosAsociados();
+    } catch (err) {
+      setInsumosError(err instanceof ApiClientError ? err.message : 'No se pudo asociar el insumo.');
+    } finally {
+      setSavingInsumo(false);
+    }
+  }
+
+  async function handleQuitarInsumo(insumoId) {
+    setInsumosError('');
+    try {
+      await serviciosApi.quitarInsumo(insumosTarget.id, insumoId);
+      await reloadInsumosAsociados();
+    } catch (err) {
+      setInsumosError(err instanceof ApiClientError ? err.message : 'No se pudo quitar el insumo.');
+    }
+  }
+
+  const insumosDisponibles = catalogoInsumos.filter(
+    (i) => !insumosAsociados.some((a) => a.insumo_id === i.id)
+  );
+
   return (
     <div>
       <div className="admin-top">
@@ -279,6 +193,9 @@ export default function AdminServicios() {
                     </span>
                   </td>
                   <td className="row-actions">
+                    <button type="button" onClick={() => openInsumos(s)}>
+                      Insumos
+                    </button>
                     <button type="button" onClick={() => openEdit(s)}>
                       Editar
                     </button>
@@ -353,8 +270,87 @@ export default function AdminServicios() {
         </Modal>
       )}
 
-      {insumosServicio && (
-        <InsumosModal servicio={insumosServicio} onClose={() => setInsumosServicio(null)} />
+      {insumosTarget && (
+        <Modal title={`Insumos — ${insumosTarget.nombre}`} onClose={() => setInsumosTarget(null)}>
+          {insumosError && <Alert type="error">{insumosError}</Alert>}
+          {insumosLoading ? (
+            <Spinner />
+          ) : (
+            <>
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Insumo</th>
+                      <th>Consume por servicio</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {insumosAsociados.map((a) => (
+                      <tr key={a.insumo_id}>
+                        <td>{a.nombre}</td>
+                        <td>
+                          {a.cantidad_consumida} {a.unidad_medida}
+                        </td>
+                        <td className="row-actions">
+                          <button type="button" onClick={() => handleQuitarInsumo(a.insumo_id)}>
+                            Quitar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {insumosAsociados.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="empty-state">
+                          Este servicio todavía no consume ningún insumo.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {insumosDisponibles.length > 0 && (
+                <form onSubmit={handleAsociar} style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                  <div className="field" style={{ flex: 2 }}>
+                    <label htmlFor="insumo">Insumo</label>
+                    <select
+                      id="insumo"
+                      required
+                      value={nuevoInsumoId}
+                      onChange={(e) => setNuevoInsumoId(e.target.value)}
+                    >
+                      <option value="" disabled>
+                        Elegí un insumo…
+                      </option>
+                      {insumosDisponibles.map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.nombre} ({i.unidad_medida})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field" style={{ flex: 1 }}>
+                    <label htmlFor="cantidad">Cantidad</label>
+                    <input
+                      id="cantidad"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      required
+                      value={nuevaCantidad}
+                      onChange={(e) => setNuevaCantidad(e.target.value)}
+                    />
+                  </div>
+                  <button className="btn btn-gold" type="submit" disabled={savingInsumo}>
+                    {savingInsumo ? 'Agregando…' : 'Agregar'}
+                  </button>
+                </form>
+              )}
+            </>
+          )}
+        </Modal>
       )}
     </div>
   );

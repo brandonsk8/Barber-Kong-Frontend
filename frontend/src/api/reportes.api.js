@@ -1,13 +1,12 @@
-// EP-06 (Sprint 3 / cierre de Fase 2) — implementado por Miguel en el backend real.
-// A diferencia del contrato que se había asumido antes (una ruta JSON por tipo de
-// reporte), es un único endpoint parametrizado que devuelve directamente el archivo
-// (PDF o Excel) para descargar, no datos para graficar en pantalla.
+// EP-06 — contrato confirmado 1:1 contra el backend real (src/modules/reportes). Un
+// único caso de uso (UC-18): tipo de reporte y formato de exportación son parámetros
+// de la misma ruta, no rutas separadas. La respuesta siempre es el archivo binario
+// (PDF o Excel), nunca JSON — no hay una vista de datos aparte de la exportación.
 //
 //   GET /api/reportes?tipo=citas|ingresos|insumos&formato=pdf|excel&desde=&hasta=
-//   -> descarga el archivo generado (admin)
 import { api } from './client.js';
 
 export const reportesApi = {
   descargar: ({ tipo, formato, desde, hasta }) =>
-    api.download(`/reportes?${new URLSearchParams({ tipo, formato, desde, hasta }).toString()}`),
+    api.download(`/reportes?${new URLSearchParams({ tipo, formato, desde, hasta })}`),
 };

@@ -9,8 +9,9 @@ export const serviciosApi = {
   create: (data) => api.post('/servicios', data),
   update: (id, data) => api.put(`/servicios/${id}`, data),
   deactivate: (id) => api.delete(`/servicios/${id}`),
-  // HU-17 — asociar insumos a un servicio (receta de consumo). Confirmado 1:1 contra
-  // src/modules/servicios en el repo de Miguel: admin-only, upsert por (servicio_id, insumo_id).
+  // UC-13 — qué insumos consume el servicio (lo que usa el descuento automático de
+  // inventario al marcar una cita como atendida). Admin-only, upsert por
+  // (servicio_id, insumo_id).
   listInsumos: (id) => api.get(`/servicios/${id}/insumos`),
   asociarInsumo: (id, data) => api.post(`/servicios/${id}/insumos`, data),
   quitarInsumo: (id, insumoId) => api.delete(`/servicios/${id}/insumos/${insumoId}`),
