@@ -773,6 +773,114 @@ footer.site-footer {
   opacity: 0.6;
 }
 
+/* BK-32 (HU-10) — vista semanal de la agenda del barbero: grid en vez de tabla, para
+   que las 7 columnas de día se repartan parejo y el ancho no dependa del contenido. */
+.agenda-week {
+  margin-top: 34px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.agenda-week-header,
+.agenda-week-row {
+  display: grid;
+  grid-template-columns: 64px repeat(7, 1fr);
+}
+.agenda-week-header {
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--line);
+}
+.agenda-week-header > div {
+  padding: 12px 6px;
+  text-align: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  border-left: 1px solid var(--line);
+}
+.agenda-week-header > div:first-child {
+  border-left: none;
+}
+.agenda-week-header > div.today {
+  color: var(--gold-bright);
+  font-weight: 600;
+}
+.agenda-week-header > div.closed {
+  opacity: 0.35;
+}
+.agenda-week-row {
+  border-bottom: 1px solid var(--line);
+}
+.agenda-week-row:last-child {
+  border-bottom: none;
+}
+.agenda-week-hour {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  font-family: var(--serif);
+  color: var(--gold-bright);
+  font-size: 13px;
+}
+.agenda-week-cell {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-left: 1px solid var(--line);
+}
+.agenda-week-cell.today {
+  background: rgba(198, 154, 82, 0.06);
+}
+.agenda-week-cell.closed {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.02) 0 8px,
+    transparent 8px 16px
+  );
+}
+.agenda-week-appt {
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.agenda-week-appt strong {
+  display: block;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-week-appt .svc {
+  display: block;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-week-appt .status-pill {
+  display: inline-block;
+  margin-top: 4px;
+}
+.agenda-week-row.lunch {
+  opacity: 0.6;
+}
+.agenda-week-lunch-label {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--muted);
+  border-left: 1px solid var(--line);
+}
+
 /* ---------- admin ---------- */
 .admin-shell {
   display: flex;

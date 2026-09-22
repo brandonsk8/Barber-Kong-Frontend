@@ -3,10 +3,10 @@
 // envío de correos ya vive en el backend (src/services/notification.service.js).
 //
 //   GET /api/notificaciones            -> mis notificaciones
-//   PUT /api/notificaciones/:id/leida  -> marcar como leída
+//   PUT /api/notificaciones/:id/leer   -> marcar como leída
 import { api } from './client.js';
 
 export const notificacionesApi = {
   list: () => api.get('/notificaciones'),
-  marcarLeida: (id) => api.put(`/notificaciones/${id}/leida`),
+  marcarLeida: (id) => api.put(`/notificaciones/${id}/leer`),
 };

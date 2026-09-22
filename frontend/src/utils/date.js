@@ -25,6 +25,27 @@ export function upcomingDays(count = 7) {
   return days;
 }
 
+// BK-32 (HU-10) — los 7 días (dom-sáb) de la semana que contiene `iso`, marcando
+// cuáles están dentro del horario de atención, para la vista semanal del barbero.
+export function weekDaysFor(iso) {
+  const base = new Date(`${iso}T00:00:00`);
+  const sunday = new Date(base);
+  sunday.setDate(base.getDate() - base.getDay());
+  const days = [];
+  for (let i = 0; i < 7; i += 1) {
+    const d = new Date(sunday);
+    d.setDate(sunday.getDate() + i);
+    days.push({
+      date: d,
+      iso: toISODate(d),
+      dow: DOW[d.getDay()],
+      dayNumber: d.getDate(),
+      open: DIAS_ABIERTOS.includes(d.getDay()),
+    });
+  }
+  return days;
+}
+
 // Franjas horarias de 9:00 a 19:00 con receso de 13:00 a 14:00, cada 1 hora, para
 // mostrar el picker cuando el backend todavía no expone /disponibilidad. Cuando ese
 // endpoint exista, sus horas ocupadas deben cruzarse con esta lista.

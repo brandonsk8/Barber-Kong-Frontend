@@ -3,10 +3,12 @@ import { useAuth } from '../../context/AuthContext.jsx';
 
 const LINKS = [
   { to: '/admin/citas', label: 'Citas' },
+  { to: '/admin/barberos', label: 'Barberos' },
   { to: '/admin/clientes', label: 'Clientes' },
   { to: '/admin/servicios', label: 'Servicios' },
   { to: '/admin/inventario', label: 'Inventario' },
   { to: '/admin/reportes', label: 'Reportes' },
+  { to: '/seguridad', label: 'Seguridad' },
 ];
 
 export default function AdminLayout() {
@@ -27,6 +29,9 @@ export default function AdminLayout() {
             {link.label}
           </NavLink>
         ))}
+        <NavLink to="/cuenta" className={({ isActive }) => `side-link ${isActive ? 'active' : ''}`}>
+          Mi cuenta
+        </NavLink>
         <button
           className="side-link"
           type="button"
