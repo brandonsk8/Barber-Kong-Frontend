@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run preview:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git branch -D:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)"
+    ],
+    "deny": [
+      "Read(./frontend/.env)",
+      "Read(./frontend/.env.local)",
+      "Read(./frontend/.env.development)",
+      "Read(./frontend/.env.production)"
+    ]
+  }
+}
