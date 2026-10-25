@@ -1,4 +1,4 @@
-# Barber Kong — Frontend
+# Barber Kongs — Frontend
 
 Frontend de Fase 2, construido desde cero con React + Vite + React Router, siguiendo
 el diseño de los mockups de Fase 1 (`mockups_barberia.html`) y el backend en
