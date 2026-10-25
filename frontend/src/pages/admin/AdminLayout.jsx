@@ -18,7 +18,7 @@ export default function AdminLayout() {
     <div className="admin-shell">
       <div className="admin-sidebar">
         <span className="logo">
-          Barber <span style={{ color: 'var(--gold)' }}>Kong</span>
+          Barber <span style={{ color: 'var(--gold)' }}>Kongs</span>
         </span>
         {LINKS.map((link) => (
           <NavLink

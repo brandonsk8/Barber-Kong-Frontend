@@ -254,7 +254,58 @@ h3 {
   padding: 110px 48px 90px;
   text-align: center;
   position: relative;
+  overflow: hidden;
   background: radial-gradient(ellipse at 50% -10%, #2a2119 0%, var(--bg) 60%);
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  background: radial-gradient(circle at 28% 20%, rgba(198, 154, 82, 0.16), transparent 55%),
+    radial-gradient(circle at 76% 65%, rgba(92, 35, 35, 0.22), transparent 50%);
+  animation: auraDrift 18s ease-in-out infinite;
+  pointer-events: none;
+}
+.hero > * {
+  position: relative;
+}
+.hero .eyebrow,
+.hero h1,
+.hero p,
+.hero-ctas {
+  opacity: 0;
+  animation: heroUp 0.9s ease forwards;
+}
+.hero .eyebrow {
+  animation-delay: 0.05s;
+}
+.hero h1 {
+  animation-delay: 0.2s;
+}
+.hero p {
+  animation-delay: 0.35s;
+}
+.hero-ctas {
+  animation-delay: 0.5s;
+}
+@keyframes heroUp {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes auraDrift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-3%, 2%) scale(1.08);
+  }
 }
 .hero h1 {
   font-size: 56px;
@@ -329,6 +380,45 @@ section.section {
   font-family: var(--serif);
   color: var(--gold-bright);
   font-size: 22px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+.gallery-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  aspect-ratio: 3 / 4;
+  background: var(--bg-card);
+  transition: border-color 0.3s ease;
+}
+.gallery-item:hover {
+  border-color: var(--gold);
+}
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.7s ease;
+}
+.gallery-item:hover img {
+  transform: scale(1.08);
+}
+.gallery-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(21, 18, 16, 0.8) 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.gallery-item:hover::after {
+  opacity: 1;
 }
 
 .team-grid {
@@ -410,6 +500,68 @@ footer.site-footer {
   text-align: center;
   color: var(--muted);
   font-size: 13px;
+}
+
+/* ---------- scroll reveal (landing) ---------- */
+section.section[data-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+section.section[data-reveal].in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+.in-view .service-card,
+.in-view .gallery-item,
+.in-view .team-card {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: heroUp 0.6s ease forwards;
+}
+.in-view .service-card:nth-child(1),
+.in-view .gallery-item:nth-child(1),
+.in-view .team-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.in-view .service-card:nth-child(2),
+.in-view .gallery-item:nth-child(2),
+.in-view .team-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.in-view .service-card:nth-child(3),
+.in-view .gallery-item:nth-child(3),
+.in-view .team-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.in-view .service-card:nth-child(4),
+.in-view .gallery-item:nth-child(4),
+.in-view .team-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.in-view .service-card:nth-child(n + 5),
+.in-view .gallery-item:nth-child(n + 5),
+.in-view .team-card:nth-child(n + 5) {
+  animation-delay: 0.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero::before {
+    animation: none;
+  }
+  .hero .eyebrow,
+  .hero h1,
+  .hero p,
+  .hero-ctas,
+  section.section[data-reveal],
+  .in-view .service-card,
+  .in-view .gallery-item,
+  .in-view .team-card {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 /* ---------- auth ---------- */
@@ -1157,7 +1309,8 @@ table.data-table {
 
 @media (max-width: 900px) {
   .services-grid,
-  .team-grid {
+  .team-grid,
+  .gallery-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   .kpi-row {
@@ -1335,5 +1488,9 @@ table.data-table {
   }
   .horario-dia-nombre {
     padding-top: 0;
+  }
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 }

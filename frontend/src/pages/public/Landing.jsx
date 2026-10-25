@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import PublicNav from '../../components/PublicNav.jsx';
 import Spinner from '../../components/Spinner.jsx';
@@ -6,9 +6,50 @@ import Alert from '../../components/Alert.jsx';
 import { serviciosApi } from '../../api/servicios.api.js';
 import { barberosApi } from '../../api/barberos.api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import corte1 from '../../assets/gallery/corte-1.jpg';
+import corte2 from '../../assets/gallery/corte-2.jpg';
+import corte3 from '../../assets/gallery/corte-3.jpg';
+import corte4 from '../../assets/gallery/corte-4.jpg';
 
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DIAS_ABIERTOS = [0, 1, 2, 3, 4]; // domingo a jueves, según PLAN_FASE2.md
+
+const GALERIA = [
+  { src: corte1, alt: 'Corte texturizado con fade — Barber Kongs' },
+  { src: corte2, alt: 'Diseño en rulos con fade bajo — Barber Kongs' },
+  { src: corte3, alt: 'Buzz fade clásico — Barber Kongs' },
+  { src: corte4, alt: 'Mullet con fade — Barber Kongs' },
+];
+
+// Hace aparecer cada sección (y sus tarjetas, con cascada por CSS) cuando entra en
+// pantalla al hacer scroll. Un solo observer para todas las secciones marcadas
+// con [data-reveal]; se desconecta cada una apenas se revela — no vuelve a animar.
+function useScrollReveal() {
+  const rootRef = useRef(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    const targets = root.querySelectorAll('[data-reveal]');
+    if (!window.IntersectionObserver) {
+      targets.forEach((el) => el.classList.add('in-view'));
+      return undefined;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -60px 0px' }
+    );
+    targets.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+  return rootRef;
+}
 
 function initials(nombre = '') {
   return nombre
@@ -21,6 +62,7 @@ function initials(nombre = '') {
 
 export default function Landing() {
   const { user, isAuthenticated } = useAuth();
+  const revealRoot = useScrollReveal();
   const [servicios, setServicios] = useState([]);
   const [barberos, setBarberos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +99,7 @@ export default function Landing() {
   if (isAuthenticated && user.role === 'barbero') return <Navigate to="/barbero/agenda" replace />;
 
   return (
-    <div>
+    <div ref={revealRoot}>
       <PublicNav />
 
       <div className="hero">
@@ -80,11 +122,11 @@ export default function Landing() {
       </div>
       <div className="stripe-divider" />
 
-      <section className="section" id="servicios">
+      <section className="section" id="servicios" data-reveal>
         <div className="section-head">
           <p className="eyebrow">Servicios</p>
           <h2>Lo que hacemos mejor</h2>
-          <p>Precios oficiales del menú de Barber Kong, visibles antes de agendar.</p>
+          <p>Precios oficiales del menú de Barber Kongs, visibles antes de agendar.</p>
         </div>
 
         {loading && <Spinner />}
@@ -105,12 +147,27 @@ export default function Landing() {
         )}
       </section>
 
-      <section className="section" style={{ background: 'var(--bg-alt)', maxWidth: 'none' }} id="equipo">
+      <section className="section" style={{ background: 'var(--bg-alt)', maxWidth: 'none' }} id="galeria" data-reveal>
+        <div className="section-head">
+          <p className="eyebrow">Galería</p>
+          <h2>Cortes que hablan por sí solos</h2>
+          <p>Una muestra del trabajo de Allan, pieza por pieza.</p>
+        </div>
+        <div className="gallery-grid" style={{ maxWidth: 1120, margin: '0 auto' }}>
+          {GALERIA.map((foto) => (
+            <div className="gallery-item" key={foto.src}>
+              <img src={foto.src} alt={foto.alt} loading="lazy" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="section" id="equipo" data-reveal>
         <div className="section-head">
           <p className="eyebrow">Equipo</p>
           <h2>Nuestros barberos</h2>
         </div>
-        <div className="team-grid" style={{ maxWidth: 1120, margin: '0 auto' }}>
+        <div className="team-grid">
           {barberos.map((b) => (
             <div className="team-card" key={b.id}>
               <div className="avatar">{initials(b.nombre)}</div>
@@ -124,7 +181,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="section" id="horario">
+      <section className="section" id="horario" data-reveal>
         <div className="section-head">
           <p className="eyebrow">Horario</p>
           <h2>Cuándo atendemos</h2>
@@ -151,7 +208,7 @@ export default function Landing() {
       </section>
 
       <footer className="site-footer">
-        © {new Date().getFullYear()} Barber Kong — Xela, Guatemala · Sistema de gestión, Seminario de Sistemas 1
+        © {new Date().getFullYear()} Barber Kongs — La Esperanza, Quetzaltenango, Guatemala
       </footer>
     </div>
   );

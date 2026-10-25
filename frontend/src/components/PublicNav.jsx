@@ -18,7 +18,7 @@ export default function PublicNav() {
   return (
     <div className="nav">
       <Link className="logo" to="/">
-        Barber<span>Kong</span>
+        Barber<span>Kongs</span>
       </Link>
       {enLanding && (
         <div className="nav-links">

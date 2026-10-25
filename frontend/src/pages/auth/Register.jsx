@@ -33,7 +33,7 @@ export default function Register() {
     <div className="app-shell centered">
       <div className="auth-card">
         <Link className="logo" to="/" style={{ marginBottom: 26, display: 'block' }}>
-          Barber<span style={{ color: 'var(--gold)' }}>Kong</span>
+          Barber<span style={{ color: 'var(--gold)' }}>Kongs</span>
         </Link>
         <div className="auth-tabs">
           <Link className="auth-tab" to="/ingresar">
