@@ -84,7 +84,7 @@ export default function Landing() {
         <div className="section-head">
           <p className="eyebrow">Servicios</p>
           <h2>Lo que hacemos mejor</h2>
-          <p>Precios oficiales del menú de Barber Kong, visibles antes de agendar.</p>
+          <p>Precios oficiales del menú de Barber Kongs, visibles antes de agendar.</p>
         </div>
 
         {loading && <Spinner />}
@@ -151,7 +151,7 @@ export default function Landing() {
       </section>
 
       <footer className="site-footer">
-        © {new Date().getFullYear()} Barber Kong — Xela, Guatemala · Sistema de gestión, Seminario de Sistemas 1
+        © {new Date().getFullYear()} Barber Kongs — Xela, Guatemala · Sistema de gestión, Seminario de Sistemas 1
       </footer>
     </div>
   );
