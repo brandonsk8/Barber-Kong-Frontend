@@ -106,7 +106,16 @@ export default function AdminClientes() {
     setSaving(true);
     setFormError('');
     try {
-      await clientesApi.update(editing.id, form);
+      // telefono y correo son opcionales en el backend, pero solo se eximen si la clave NO
+      // viene en el body: mandados como '' el schema les aplica igual `format: 'email'` y
+      // responde 400. Por eso los vacíos se omiten en vez de enviarse.
+      const payload = { nombre: form.nombre.trim() };
+      const telefono = form.telefono.trim();
+      const correo = form.correo.trim();
+      if (telefono) payload.telefono = telefono;
+      if (correo) payload.correo = correo;
+
+      await clientesApi.update(editing.id, payload);
       setModalOpen(false);
       load();
     } catch (err) {
