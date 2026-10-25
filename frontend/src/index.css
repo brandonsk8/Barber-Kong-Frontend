@@ -469,6 +469,8 @@ section.section {
 .schedule-days {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 .day-pill {
   width: 56px;
@@ -1520,6 +1522,15 @@ table.data-table {
   }
   .section-head {
     margin-bottom: 32px;
+  }
+  .day-pill {
+    width: 44px;
+    height: 44px;
+    font-size: 12px;
+  }
+  .schedule-wrap {
+    padding: 24px 16px;
+    gap: 24px;
   }
   .horario-dia {
     grid-template-columns: 1fr;
