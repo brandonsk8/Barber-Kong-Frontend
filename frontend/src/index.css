@@ -30,6 +30,7 @@ body {
   background: var(--bg);
   color: var(--cream);
   font-family: var(--sans);
+  overflow-x: hidden;
 }
 
 a {
@@ -1104,7 +1105,7 @@ section.section[data-reveal].in-view {
   margin-top: 4px;
 }
 .kpi-card.alert {
-  border-color: var(--maroon);
+  border-left: 3px solid var(--maroon);
 }
 .kpi-card.alert .num {
   color: #d98787;
@@ -1481,7 +1482,45 @@ table.data-table {
   text-transform: none;
 }
 
+/* ---------- panel de notificaciones (NotificationsBell) ---------- */
+.notif-panel {
+  position: absolute;
+  right: 0;
+  top: 110%;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  z-index: 50;
+}
+
 @media (max-width: 600px) {
+  /* En celular el botón de la campana no queda pegado al borde derecho de la
+     pantalla, así que anclar el panel a su "right: 0" lo saca de pantalla por
+     la izquierda. Acá lo volvemos fixed, centrado al ancho de la pantalla. */
+  .notif-panel {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: 72px;
+    width: auto;
+    max-width: none;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Con menos contenido por sección (p.ej. un solo barbero en Equipo), el padding
+     pensado para pantallas grandes se siente como un bache vacío en celular. */
+  section.section {
+    padding: 40px 20px;
+  }
+  .section-head {
+    margin-bottom: 32px;
+  }
   .horario-dia {
     grid-template-columns: 1fr;
     gap: 4px;

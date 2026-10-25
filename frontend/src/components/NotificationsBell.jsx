@@ -56,21 +56,7 @@ export default function NotificationsBell() {
         🔔{noLeidas > 0 ? ` ${noLeidas}` : ''}
       </button>
       {open && (
-        <div
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: '110%',
-            width: 320,
-            maxHeight: 360,
-            overflowY: 'auto',
-            background: 'var(--bg, #1a1a1a)',
-            border: '1px solid var(--border, #333)',
-            borderRadius: 8,
-            padding: 8,
-            zIndex: 50,
-          }}
-        >
+        <div className="notif-panel">
           {loading && <p className="empty-state">Cargando…</p>}
           {!loading && notificaciones.length === 0 && (
             <p className="empty-state">No tenés notificaciones.</p>
