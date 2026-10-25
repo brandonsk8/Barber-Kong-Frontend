@@ -1131,6 +1131,9 @@ table.data-table {
   max-height: 90vh;
   overflow-y: auto;
 }
+.modal-card.modal-wide {
+  width: 620px;
+}
 .modal-head {
   display: flex;
   justify-content: space-between;
@@ -1191,5 +1194,146 @@ table.data-table {
   }
   section.section {
     padding: 56px 24px;
+  }
+}
+
+/* ---------- horario semanal del barbero (AdminBarberos) ---------- */
+.horario-editor {
+  margin-bottom: 8px;
+}
+.horario-dia {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.horario-dia-nombre {
+  font-size: 14px;
+  padding-top: 8px;
+}
+.horario-dia-nombre.libre {
+  color: var(--muted);
+}
+.horario-bloques {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.horario-bloque {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.horario-bloque input[type='time'] {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 8px 10px;
+  color: var(--cream);
+  font-family: var(--sans);
+  font-size: 14px;
+  color-scheme: dark;
+}
+.horario-bloque input[type='time']:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+.horario-quitar {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 6px 10px;
+}
+.horario-quitar:hover {
+  color: var(--red-err);
+  border-color: var(--red-err);
+}
+.horario-vacio {
+  color: var(--muted);
+  font-size: 13px;
+  padding-top: 8px;
+}
+.horario-agregar {
+  background: none;
+  border: none;
+  color: var(--gold);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 0;
+}
+.horario-agregar:hover {
+  color: var(--gold-bright);
+}
+
+/* ---------- días sin disponibilidad del barbero ---------- */
+.ausencias-panel {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.ausencias-titulo {
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+.ausencias-form {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.ausencias-form .field {
+  margin: 0;
+  flex: 1 1 180px;
+}
+.ausencias-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ausencia-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  text-transform: capitalize;
+}
+.ausencia-motivo {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: none;
+  margin-top: 2px;
+}
+.ausencia-confirmar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 13px;
+  text-transform: none;
+}
+
+@media (max-width: 600px) {
+  .horario-dia {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .horario-dia-nombre {
+    padding-top: 0;
   }
 }

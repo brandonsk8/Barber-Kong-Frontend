@@ -7,7 +7,7 @@ import { serviciosApi } from '../../api/servicios.api.js';
 import { barberosApi } from '../../api/barberos.api.js';
 import { citasApi } from '../../api/citas.api.js';
 import { ApiClientError } from '../../api/client.js';
-import { upcomingDays, defaultTimeSlots, formatFechaLarga } from '../../utils/date.js';
+import { upcomingDays, slotsDeBloques, formatFechaLarga } from '../../utils/date.js';
 import MisCitas from './MisCitas.jsx';
 
 const STEPS = ['Servicio', 'Barbero', 'Fecha y hora', 'Confirmar'];
@@ -24,7 +24,11 @@ export default function Booking() {
   const [barberoId, setBarberoId] = useState('');
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
-  const [ocupadas, setOcupadas] = useState([]);
+  // Disponibilidad real del barbero elegido para cada uno de los días mostrados:
+  // { 'AAAA-MM-DD': { ocupadas, trabaja, bloques, ausente } } (según su horario y ausencias).
+  const [dispDias, setDispDias] = useState({});
+  const [loadingDias, setLoadingDias] = useState(false);
+  const [dispError, setDispError] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -32,9 +36,14 @@ export default function Booking() {
   const [citasRefreshToken, setCitasRefreshToken] = useState(0);
 
   const dias = useMemo(() => upcomingDays(7), []);
-  const horas = useMemo(() => defaultTimeSlots(), []);
   const servicio = servicios.find((s) => s.id === servicioId);
   const barbero = barberos.find((b) => b.id === barberoId);
+  // Horas ofrecibles del día elegido: salen de los bloques de atención del barbero y de la
+  // duración del servicio (una hora solo se ofrece si el servicio termina dentro del bloque).
+  const infoDia = fecha ? dispDias[fecha] : null;
+  const horas = infoDia
+    ? slotsDeBloques(infoDia.bloques, servicio?.duracion_minutos || 60, infoDia.ocupadas)
+    : [];
 
   useEffect(() => {
     let cancelled = false;
@@ -64,28 +73,34 @@ export default function Booking() {
     };
   }, []);
 
-  // Al elegir barbero + fecha, consultamos disponibilidad real. Si el endpoint aún no
-  // existe en el backend (EP-02 en construcción), asumimos que solo el almuerzo está
-  // bloqueado y dejamos el resto de horas libres.
+  // Al elegir barbero consultamos su disponibilidad de los días mostrados (horario semanal
+  // + ausencias + citas ya agendadas). Si falla, no se ofrece ningún día: es preferible a
+  // dejar elegir una hora que el backend después va a rechazar.
   useEffect(() => {
-    if (!barberoId || !fecha) {
-      setOcupadas([]);
-      return;
-    }
+    if (!barberoId) return undefined;
     let cancelled = false;
-    async function loadDisponibilidad() {
+    async function loadDias() {
+      setLoadingDias(true);
+      setDispError('');
       try {
-        const res = await barberosApi.getDisponibilidad(barberoId, fecha);
-        if (!cancelled) setOcupadas(res?.ocupadas || []);
-      } catch {
-        if (!cancelled) setOcupadas([]);
+        const res = await Promise.all(dias.map((d) => barberosApi.getDisponibilidad(barberoId, d.iso)));
+        if (!cancelled) setDispDias(Object.fromEntries(dias.map((d, i) => [d.iso, res[i]])));
+      } catch (err) {
+        if (!cancelled) {
+          setDispDias({});
+          setDispError(
+            err instanceof ApiClientError ? err.message : 'No se pudo consultar la disponibilidad del barbero.'
+          );
+        }
+      } finally {
+        if (!cancelled) setLoadingDias(false);
       }
     }
-    loadDisponibilidad();
+    loadDias();
     return () => {
       cancelled = true;
     };
-  }, [barberoId, fecha]);
+  }, [barberoId, dias]);
 
   function goTo(next) {
     setStep(Math.max(0, Math.min(STEPS.length - 1, next)));
@@ -187,7 +202,11 @@ export default function Booking() {
                       key={b.id}
                       type="button"
                       className={`option-card ${barberoId === b.id ? 'selected' : ''}`}
-                      onClick={() => setBarberoId(b.id)}
+                      onClick={() => {
+                        setBarberoId(b.id);
+                        setFecha('');
+                        setHora('');
+                      }}
                     >
                       <h4>{b.nombre}</h4>
                       <div className="meta">{b.especialidad || 'Barbero'}</div>
@@ -229,46 +248,73 @@ export default function Booking() {
                   </div>
                 </div>
 
+                {dispError && <Alert type="error">{dispError}</Alert>}
+
                 <p className="picker-title">Elegí fecha</p>
-                <div className="day-grid">
-                  {dias.map((d) => (
-                    <button
-                      key={d.iso}
-                      type="button"
-                      disabled={!d.open}
-                      className={`day-cell ${d.open ? 'selectable' : 'disabled'} ${
-                        fecha === d.iso ? 'selected' : ''
-                      }`}
-                      onClick={() => {
-                        setFecha(d.iso);
-                        setHora('');
-                      }}
-                    >
-                      <span className="dow">{d.dow}</span>
-                      {d.dayNumber}
-                    </button>
-                  ))}
-                </div>
+                {loadingDias ? (
+                  <Spinner />
+                ) : (
+                  <>
+                    <div className="day-grid">
+                      {dias.map((d) => {
+                        const info = dispDias[d.iso];
+                        const disponible = Boolean(info?.trabaja);
+                        return (
+                          <button
+                            key={d.iso}
+                            type="button"
+                            disabled={!disponible}
+                            title={
+                              disponible
+                                ? undefined
+                                : info?.ausente
+                                  ? 'El barbero no estará disponible ese día'
+                                  : 'El barbero no atiende ese día'
+                            }
+                            className={`day-cell ${disponible ? 'selectable' : 'disabled'} ${
+                              fecha === d.iso ? 'selected' : ''
+                            }`}
+                            onClick={() => {
+                              setFecha(d.iso);
+                              setHora('');
+                            }}
+                          >
+                            <span className="dow">{d.dow}</span>
+                            {d.dayNumber}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {!dispError && dias.some((d) => !dispDias[d.iso]?.trabaja) && (
+                      <p className="field-hint">
+                        Los días atenuados son días en que {barbero?.nombre} no atiende o no estará disponible.
+                      </p>
+                    )}
+                  </>
+                )}
 
                 <p className="picker-title">Elegí hora</p>
-                <div className="time-grid">
-                  {horas.map((h) => {
-                    const blocked = h.blocked || ocupadas.includes(h.value);
-                    return (
+                {!fecha && <p className="field-hint">Elegí primero una fecha.</p>}
+                {fecha && horas.length === 0 && (
+                  <p className="empty-state">No hay horas disponibles ese día.</p>
+                )}
+                {horas.length > 0 && (
+                  <div className="time-grid">
+                    {horas.map((h) => (
                       <button
                         key={h.value}
                         type="button"
-                        disabled={!fecha || blocked}
-                        className={`time-slot ${blocked ? 'blocked' : 'free'} ${
+                        disabled={h.blocked}
+                        className={`time-slot ${h.blocked ? 'blocked' : 'free'} ${
                           hora === h.value ? 'selected' : ''
                         }`}
                         onClick={() => setHora(h.value)}
                       >
                         {h.label.replace(' a.m.', '').replace(' p.m.', '')}
                       </button>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                )}
                 <div className="hint-row">
                   <span>
                     <span className="hint-dot" style={{ background: 'var(--gold)' }} />

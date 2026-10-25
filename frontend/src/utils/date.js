@@ -66,3 +66,48 @@ export function formatFechaLarga(iso) {
   const d = new Date(`${iso}T00:00:00`);
   return d.toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long' });
 }
+
+export const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+// "Hoy" en la zona horaria del navegador (AAAA-MM-DD). toISODate usa UTC, que de noche en
+// Guatemala ya es "mañana"; para validar fechas que el usuario elige hay que usar esta.
+export function hoyLocalISO() {
+  return new Intl.DateTimeFormat('en-CA').format(new Date());
+}
+
+const ALMUERZO_INICIO = 13 * 60; // receso de almuerzo de la barbería: 13:00 a 14:00
+const ALMUERZO_FIN = 14 * 60;
+
+function aMinutos(hhmm) {
+  const [h, m] = String(hhmm).slice(0, 5).split(':').map(Number);
+  return h * 60 + m;
+}
+
+function deMinutos(min) {
+  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+}
+
+function etiquetaHora(min) {
+  const h = Math.floor(min / 60);
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(min % 60).padStart(2, '0')} ${h >= 12 ? 'p.m.' : 'a.m.'}`;
+}
+
+// Horas de inicio que se pueden ofrecer en un día según los bloques de atención del
+// barbero (los que devuelve /disponibilidad): una cada hora dentro de cada bloque y solo
+// si el servicio (`duracionMin`) termina antes de que el bloque cierre. `ocupadas` son
+// las marcas horarias ("HH:00") que el backend reporta con cita; una franja se bloquea si
+// toca alguna. El receso de almuerzo sigue siendo una regla global de la barbería.
+export function slotsDeBloques(bloques, duracionMin, ocupadas = []) {
+  const marcas = ocupadas.map(aMinutos);
+  const slots = [];
+  (bloques || []).forEach((b) => {
+    const fin = aMinutos(b.hora_fin);
+    for (let t = aMinutos(b.hora_inicio); t + duracionMin <= fin; t += 60) {
+      const almuerzo = t < ALMUERZO_FIN && t + duracionMin > ALMUERZO_INICIO;
+      const ocupada = marcas.some((m) => m < t + duracionMin && m + 60 > t);
+      slots.push({ value: deMinutos(t), label: etiquetaHora(t), blocked: almuerzo || ocupada });
+    }
+  });
+  return slots;
+}

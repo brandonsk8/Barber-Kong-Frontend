@@ -6,6 +6,9 @@ import { useEffect, useState } from 'react';
 import Spinner from '../../components/Spinner.jsx';
 import Alert from '../../components/Alert.jsx';
 import Modal from '../../components/Modal.jsx';
+import HorarioEditor from '../../components/HorarioEditor.jsx';
+import AusenciasBarbero from '../../components/AusenciasBarbero.jsx';
+import { horarioPorDefecto, validarHorario } from '../../utils/horario.js';
 import { barberosApi } from '../../api/barberos.api.js';
 import { ApiClientError } from '../../api/client.js';
 
@@ -21,6 +24,12 @@ export default function AdminBarberos() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [busyId, setBusyId] = useState(null);
+  // Horario semanal del formulario: lista de bloques; `null` = no se pudo cargar al editar,
+  // en cuyo caso se guarda solo nombre/especialidad y el horario actual no se toca.
+  const [horario, setHorario] = useState(horarioPorDefecto());
+  const [horarioErrores, setHorarioErrores] = useState({});
+  const [loadingHorario, setLoadingHorario] = useState(false);
+  const [ausenciasTarget, setAusenciasTarget] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -42,28 +51,63 @@ export default function AdminBarberos() {
   function openCreate() {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setHorario(horarioPorDefecto());
+    setHorarioErrores({});
     setFormError('');
     setModalOpen(true);
   }
 
-  function openEdit(barbero) {
+  async function openEdit(barbero) {
     setEditing(barbero);
     setForm({ nombre: barbero.nombre, especialidad: barbero.especialidad || '', email: '', password: '' });
+    setHorario([]);
+    setHorarioErrores({});
     setFormError('');
     setModalOpen(true);
+    // El horario no viene en el listado: se pide el detalle del barbero.
+    setLoadingHorario(true);
+    try {
+      const detalle = await barberosApi.getById(barbero.id);
+      setHorario(detalle.horario || []);
+    } catch (err) {
+      setHorario(null);
+      setFormError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'No se pudo cargar el horario. Puedes editar los demás datos.'
+      );
+    } finally {
+      setLoadingHorario(false);
+    }
   }
 
   async function handleSave(e) {
     e.preventDefault();
-    setSaving(true);
     setFormError('');
+
+    // UC-22/UC-23: con horario cargado, se valida antes de enviar y se señala el bloque
+    // con error (el backend vuelve a validar y es quien decide).
+    if (horario) {
+      const errores = validarHorario(horario);
+      setHorarioErrores(errores);
+      if (Object.keys(errores).length > 0) {
+        setFormError('Revisa el horario: hay campos con error.');
+        return;
+      }
+    }
+
+    setSaving(true);
     try {
       if (editing) {
-        // UC-23: solo nombre y especialidad son editables (el correo/contraseña de
+        // UC-23: nombre, especialidad y horario son editables (el correo/contraseña de
         // acceso se gestionan por separado, no forman parte de este formulario).
-        await barberosApi.update(editing.id, { nombre: form.nombre, especialidad: form.especialidad });
+        await barberosApi.update(editing.id, {
+          nombre: form.nombre,
+          especialidad: form.especialidad,
+          ...(horario && { horario }),
+        });
       } else {
-        await barberosApi.create(form);
+        await barberosApi.create({ ...form, horario });
       }
       setModalOpen(false);
       load();
@@ -130,6 +174,9 @@ export default function AdminBarberos() {
                     <button type="button" onClick={() => openEdit(b)}>
                       Editar
                     </button>
+                    <button type="button" onClick={() => setAusenciasTarget(b)}>
+                      Ausencias
+                    </button>
                     {b.is_active && (
                       <button
                         type="button"
@@ -155,7 +202,7 @@ export default function AdminBarberos() {
       )}
 
       {modalOpen && (
-        <Modal title={editing ? 'Editar barbero' : 'Nuevo barbero'} onClose={() => setModalOpen(false)}>
+        <Modal title={editing ? 'Editar barbero' : 'Nuevo barbero'} wide onClose={() => setModalOpen(false)}>
           {formError && <Alert type="error">{formError}</Alert>}
           <form onSubmit={handleSave}>
             <div className="field">
@@ -200,15 +247,42 @@ export default function AdminBarberos() {
                 </div>
               </>
             )}
+            {horario && (
+              <>
+                <p className="picker-title">Horario de atención</p>
+                {loadingHorario ? (
+                  <Spinner />
+                ) : (
+                  <HorarioEditor
+                    horario={horario}
+                    onChange={(nuevo) => {
+                      setHorario(nuevo);
+                      setHorarioErrores({});
+                    }}
+                    errores={horarioErrores}
+                  />
+                )}
+              </>
+            )}
             <div className="modal-actions">
               <button className="btn btn-ghost" type="button" onClick={() => setModalOpen(false)}>
                 Cancelar
               </button>
-              <button className="btn btn-gold" type="submit" disabled={saving}>
+              <button className="btn btn-gold" type="submit" disabled={saving || loadingHorario}>
                 {saving ? 'Guardando…' : 'Guardar'}
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {ausenciasTarget && (
+        <Modal
+          title={`Días sin disponibilidad — ${ausenciasTarget.nombre}`}
+          wide
+          onClose={() => setAusenciasTarget(null)}
+        >
+          <AusenciasBarbero barberoId={ausenciasTarget.id} />
         </Modal>
       )}
     </div>
