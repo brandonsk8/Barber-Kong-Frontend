@@ -1274,6 +1274,60 @@ table.data-table {
   color: var(--gold-bright);
 }
 
+/* ---------- días sin disponibilidad del barbero ---------- */
+.ausencias-panel {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.ausencias-titulo {
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+.ausencias-form {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.ausencias-form .field {
+  margin: 0;
+  flex: 1 1 180px;
+}
+.ausencias-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ausencia-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  text-transform: capitalize;
+}
+.ausencia-motivo {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: none;
+  margin-top: 2px;
+}
+.ausencia-confirmar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 13px;
+  text-transform: none;
+}
+
 @media (max-width: 600px) {
   .horario-dia {
     grid-template-columns: 1fr;

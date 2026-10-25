@@ -7,6 +7,7 @@ import Spinner from '../../components/Spinner.jsx';
 import Alert from '../../components/Alert.jsx';
 import Modal from '../../components/Modal.jsx';
 import HorarioEditor from '../../components/HorarioEditor.jsx';
+import AusenciasBarbero from '../../components/AusenciasBarbero.jsx';
 import { horarioPorDefecto, validarHorario } from '../../utils/horario.js';
 import { barberosApi } from '../../api/barberos.api.js';
 import { ApiClientError } from '../../api/client.js';
@@ -28,6 +29,7 @@ export default function AdminBarberos() {
   const [horario, setHorario] = useState(horarioPorDefecto());
   const [horarioErrores, setHorarioErrores] = useState({});
   const [loadingHorario, setLoadingHorario] = useState(false);
+  const [ausenciasTarget, setAusenciasTarget] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -172,6 +174,9 @@ export default function AdminBarberos() {
                     <button type="button" onClick={() => openEdit(b)}>
                       Editar
                     </button>
+                    <button type="button" onClick={() => setAusenciasTarget(b)}>
+                      Ausencias
+                    </button>
                     {b.is_active && (
                       <button
                         type="button"
@@ -268,6 +273,16 @@ export default function AdminBarberos() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {ausenciasTarget && (
+        <Modal
+          title={`Días sin disponibilidad — ${ausenciasTarget.nombre}`}
+          wide
+          onClose={() => setAusenciasTarget(null)}
+        >
+          <AusenciasBarbero barberoId={ausenciasTarget.id} />
         </Modal>
       )}
     </div>

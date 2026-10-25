@@ -4,6 +4,7 @@ import Spinner from '../../components/Spinner.jsx';
 import Alert from '../../components/Alert.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import Modal from '../../components/Modal.jsx';
+import AusenciasBarbero from '../../components/AusenciasBarbero.jsx';
 import { citasApi } from '../../api/citas.api.js';
 import { serviciosApi } from '../../api/servicios.api.js';
 import { ApiClientError } from '../../api/client.js';
@@ -379,6 +380,16 @@ export default function Agenda() {
               )
             )}
           </div>
+        )}
+
+        {/* El barbero marca los días completos en que no estará disponible: mientras estén
+            marcados no se le pueden agendar citas. Usa su barberos.id (no el de users). */}
+        {user?.barberoId && (
+          <section className="ausencias-panel">
+            <p className="eyebrow">Mi agenda</p>
+            <h3 className="ausencias-titulo">Días que no estaré disponible</h3>
+            <AusenciasBarbero barberoId={user.barberoId} />
+          </section>
         )}
       </div>
 
