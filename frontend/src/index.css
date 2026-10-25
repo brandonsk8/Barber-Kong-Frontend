@@ -423,7 +423,8 @@ section.section {
 
 .team-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 220px));
+  justify-content: center;
   gap: 20px;
 }
 .team-card {
@@ -1309,7 +1310,6 @@ table.data-table {
 
 @media (max-width: 900px) {
   .services-grid,
-  .team-grid,
   .gallery-grid {
     grid-template-columns: repeat(2, 1fr);
   }
