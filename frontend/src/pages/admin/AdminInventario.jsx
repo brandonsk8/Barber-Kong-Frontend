@@ -12,6 +12,7 @@ export default function AdminInventario() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [entradaTarget, setEntradaTarget] = useState(null);
   const [entradaCantidad, setEntradaCantidad] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
@@ -42,17 +43,44 @@ export default function AdminInventario() {
     );
   }
 
-  async function handleCreate(e) {
+  function openCreate() {
+    setEditing(null);
+    setForm(EMPTY_FORM);
+    setFormError('');
+    setModalOpen(true);
+  }
+
+  function openEdit(insumo) {
+    setEditing(insumo);
+    setForm({
+      nombre: insumo.nombre,
+      unidad_medida: insumo.unidad_medida,
+      cantidad_minima: insumo.cantidad_minima ?? '',
+    });
+    setFormError('');
+    setModalOpen(true);
+  }
+
+  async function handleSave(e) {
     e.preventDefault();
     setSaving(true);
     setFormError('');
+    // El backend valida el payload con un schema estricto que solo acepta estos tres
+    // campos en POST/PUT /inventario — "cantidad_disponible" no es uno de ellos (se
+    // maneja aparte, vía /inventario/:id/entrada, para quedar auditada como movimiento).
+    const payload = {
+      nombre: form.nombre,
+      unidad_medida: form.unidad_medida,
+      cantidad_minima: form.cantidad_minima !== '' ? Number(form.cantidad_minima) : null,
+    };
     try {
-      await inventarioApi.create({
-        nombre: form.nombre,
-        unidad_medida: form.unidad_medida,
-        cantidad_minima: form.cantidad_minima ? Number(form.cantidad_minima) : null,
-      });
+      if (editing) {
+        await inventarioApi.update(editing.id, payload);
+      } else {
+        await inventarioApi.create(payload);
+      }
       setModalOpen(false);
+      setEditing(null);
       setForm(EMPTY_FORM);
       load();
     } catch (err) {
@@ -89,7 +117,7 @@ export default function AdminInventario() {
           </p>
           <h2 style={{ fontSize: 24 }}>Inventario</h2>
         </div>
-        <button className="btn btn-gold" type="button" onClick={() => setModalOpen(true)}>
+        <button className="btn btn-gold" type="button" onClick={openCreate}>
           + Registrar insumo
         </button>
       </div>
@@ -135,6 +163,9 @@ export default function AdminInventario() {
                     </span>
                   </td>
                   <td className="row-actions">
+                    <button type="button" onClick={() => openEdit(i)}>
+                      Editar
+                    </button>
                     <button type="button" onClick={() => setEntradaTarget(i)}>
                       + Entrada
                     </button>
@@ -154,9 +185,15 @@ export default function AdminInventario() {
       )}
 
       {modalOpen && (
-        <Modal title="Registrar insumo" onClose={() => setModalOpen(false)}>
+        <Modal
+          title={editing ? `Editar insumo — ${editing.nombre}` : 'Registrar insumo'}
+          onClose={() => {
+            setModalOpen(false);
+            setEditing(null);
+          }}
+        >
           {formError && <Alert type="error">{formError}</Alert>}
-          <form onSubmit={handleCreate}>
+          <form onSubmit={handleSave}>
             <div className="field">
               <label htmlFor="nombre">Nombre</label>
               <input
@@ -171,7 +208,7 @@ export default function AdminInventario() {
               <input
                 id="unidad"
                 required
-                placeholder="litros, unidades, paquetes…"
+                placeholder="botes, rollos, galones, cartones…"
                 value={form.unidad_medida}
                 onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })}
               />
@@ -187,8 +224,21 @@ export default function AdminInventario() {
               />
               <p className="field-hint">Si lo dejás vacío, no se genera alerta de stock bajo.</p>
             </div>
+            {editing && (
+              <p className="field-hint">
+                La cantidad actual ({editing.cantidad_disponible} {editing.unidad_medida}) no se edita
+                acá — para corregirla o sumarle, usá "+ Entrada" desde la tabla.
+              </p>
+            )}
             <div className="modal-actions">
-              <button className="btn btn-ghost" type="button" onClick={() => setModalOpen(false)}>
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={() => {
+                  setModalOpen(false);
+                  setEditing(null);
+                }}
+              >
                 Cancelar
               </button>
               <button className="btn btn-gold" type="submit" disabled={saving}>
