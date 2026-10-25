@@ -6,8 +6,6 @@ import { clientesApi } from '../../api/clientes.api.js';
 import { ApiClientError } from '../../api/client.js';
 import { formatFechaLarga } from '../../utils/date.js';
 
-const EMPTY_FORM = { nombre: '', telefono: '', correo: '' };
-
 const ESTADO_PILL = {
   confirmada: 'ok',
   atendida: 'ok',
@@ -23,7 +21,7 @@ export default function AdminClientes() {
   const [estado, setEstado] = useState('activos'); // BK-24 (HU-15): activos | inactivos
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState({ nombre: '', telefono: '', correo: '' });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [busyId, setBusyId] = useState(null);
@@ -62,13 +60,6 @@ export default function AdminClientes() {
     } finally {
       setBusyId(null);
     }
-  }
-
-  function openCreate() {
-    setEditing(null);
-    setForm(EMPTY_FORM);
-    setFormError('');
-    setModalOpen(true);
   }
 
   function openEdit(cliente) {
@@ -115,8 +106,7 @@ export default function AdminClientes() {
     setSaving(true);
     setFormError('');
     try {
-      if (editing) await clientesApi.update(editing.id, form);
-      else await clientesApi.create(form);
+      await clientesApi.update(editing.id, form);
       setModalOpen(false);
       load();
     } catch (err) {
@@ -135,9 +125,6 @@ export default function AdminClientes() {
           </p>
           <h2 style={{ fontSize: 24 }}>Clientes</h2>
         </div>
-        <button className="btn btn-gold" type="button" onClick={openCreate}>
-          + Nuevo cliente
-        </button>
       </div>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -223,8 +210,8 @@ export default function AdminClientes() {
         </div>
       )}
 
-      {modalOpen && (
-        <Modal title={editing ? 'Editar cliente' : 'Nuevo cliente'} onClose={() => setModalOpen(false)}>
+      {modalOpen && editing && (
+        <Modal title="Editar cliente" onClose={() => setModalOpen(false)}>
           {formError && <Alert type="error">{formError}</Alert>}
           <form onSubmit={handleSave}>
             <div className="field">
