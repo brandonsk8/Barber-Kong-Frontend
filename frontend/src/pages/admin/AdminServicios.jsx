@@ -199,9 +199,6 @@ export default function AdminServicios() {
                     <button type="button" onClick={() => openEdit(s)}>
                       Editar
                     </button>
-                    <button type="button" onClick={() => setInsumosServicio(s)}>
-                      Insumos
-                    </button>
                     {s.is_active && (
                       <button type="button" onClick={() => handleDeactivate(s.id)}>
                         Desactivar
