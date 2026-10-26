@@ -1,0 +1,36 @@
+# CI del frontend: corre lint + build en cada PR y push a develop/main. No despliega nada
+# (eso lo sigue haciendo Vercel solo) — esto solo corta el flujo si el código no compila
+# o el lint falla, antes de que llegue a producción.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_URL: https://barber-kong-api.vercel.app/api
